@@ -1,0 +1,7 @@
+# ignore all file types
+*.*
+
+# except these file types
+!.gitignore
+!*.go
+!*.mod
