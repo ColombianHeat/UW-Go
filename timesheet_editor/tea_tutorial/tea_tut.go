@@ -2,62 +2,53 @@ package main
 
 import (
 	"fmt"
-	"os"
 
-	"github.com/charmbracelet/bubbles/list"
-	tea "github.com/charmbracelet/bubbletea"
+	bolt "go.etcd.io/bbolt"
 )
 
-type item struct {
-	title, desc string
-}
-
-func (i item) Title() string       { return i.title }
-func (i item) Description() string { return i.desc }
-func (i item) FilterValue() string { return i.title }
-
-type model struct {
-	list list.Model
-}
-
-func initialModel() model {
-	items := []list.Item{
-		item{title: "Item 1", desc: "Description for item 1"},
-		item{title: "Item 2", desc: "Description for item 2"},
-		item{title: "Item 3", desc: "Description for item 3"},
-		item{title: "Item 4", desc: "Description for item 4"},
-		item{title: "Item 5", desc: "Description for item 5"},
-	}
-
-	l := list.New(items, list.NewDefaultDelegate(), 0, 0)
-	l.Title = "My List"
-
-	return model{list: l}
-}
-
-func (m model) Init() tea.Cmd {
-	return nil
-}
-
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.list.SetSize(msg.Width, msg.Height)
-	}
-
-	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
-	return m, cmd
-}
-
-func (m model) View() string {
-	return m.list.View()
-}
-
 func main() {
-	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
-	if err := p.Start(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+	// open db. If not exists, create
+	db, err := bolt.Open("./my.db", 0600, nil) // 0600 - read-write permission
+	if err != nil {
+		panic(err)
+}
+
+
+// create bucket, keys, values
+err = db.Update(func(tx *bolt.Tx) error {
+	b, err := tx.CreateBucketIfNotExists([]byte("2024-August-06")) // create date bucket
+	if err != nil {
+		return err
 	}
+	err = b.Put([]byte("Did a thing"), []byte("7")) // create line entry for date
+	if err != nil {
+		return err
+	}
+	err = b.Put([]byte("Worked some overtime"), []byte("2.5")) // create line entry for date
+	if err != nil {
+		return err
+	}
+
+	return nil
+})
+if err != nil {
+	panic(err)
+}
+
+// View bucket. Iterate over entries. Count entries
+db.View(func(tx *bolt.Tx) error {
+	b := tx.Bucket([]byte("2024-August-06"))
+	
+	c := b.Cursor()
+	i := 0
+	for k,v := c.First(); k != nil; k,v = c.Next() {
+		i ++
+		fmt.Printf("key=%s, value=%s\n", k, v)
+	}
+
+	fmt.Printf("Found %d entries\n", i)
+	return nil
+})
+
+defer db.Close()
 }

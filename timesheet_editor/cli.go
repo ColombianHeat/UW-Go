@@ -13,10 +13,11 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+
 	"gopkg.in/ini.v1"
 )
 
-func cliModel() (outTable map[string][]string) {
+func CliModel() (outTable map[string][]string) {
 	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
 	
 	finalModel, err := p.Run()
@@ -29,22 +30,83 @@ func cliModel() (outTable map[string][]string) {
 	return output
 }
 
-// const (
-// 	hotPink  = lipgloss.Color("#FF06B7")
-// 	darkGray = lipgloss.Color("#767676")
-// )
+const (
+	txtCol  = lipgloss.Color("#e0b6d9")
+	borderCol = lipgloss.Color("#767676")
+	BgCol = lipgloss.Color("#242424")
+	highlightCol = lipgloss.Color("#d60db5")
+	notHighlightCol = lipgloss.Color("#c2c2c2")
+	placeholderCol = lipgloss.Color("#767676")
+	errorCol1 = lipgloss.Color("#bf3434")
+	errorCol2 = lipgloss.Color("#ff0000")
+	lieuHrCol = lipgloss.Color("#e0e34b")
+)
 
-// var (
-// 	inputStyle    = lipgloss.NewStyle().Foreground(hotPink)
-// 	continueStyle = lipgloss.NewStyle().Foreground(darkGray)
-// )
+var (
+	bgColourStyle = lipgloss.NewStyle().Foreground(txtCol).Background(BgCol)
+	inputStyle = lipgloss.NewStyle().
+				Foreground(highlightCol).
+				Background(BgCol)
+)
+
+type Styles struct {
+	txt lipgloss.Style
+	tableHeaderStyle lipgloss.Style
+	tableContentStyle lipgloss.Style
+	inputField lipgloss.Style
+	backgroundColour lipgloss.Color
+	borderColour lipgloss.Color
+	choiceStyle lipgloss.Style
+	highlightStyle lipgloss.Style
+	errorStyle lipgloss.Style
+	errorColour1 lipgloss.Color
+	errorColour2 lipgloss.Color
+	lieuHrColour lipgloss.Color
+	lieuHrStyle lipgloss.Style
+}
+
+func DefaultStyles() *Styles {
+	s := new(Styles)
+	s.backgroundColour = lipgloss.Color(BgCol)
+	s.borderColour = lipgloss.Color(borderCol)
+	s.errorColour1 = lipgloss.Color(errorCol1)
+	s.errorColour2 = lipgloss.Color(errorCol2)
+	s.lieuHrColour = lipgloss.Color(lieuHrCol)
+	s.choiceStyle = lipgloss.NewStyle().
+					Background(s.backgroundColour).
+					Foreground(notHighlightCol).
+					MarginLeft(5).
+					MarginBackground(s.backgroundColour)
+	s.highlightStyle = s.choiceStyle.Foreground(highlightCol)
+	s.txt = lipgloss.NewStyle().Foreground(txtCol).Background(BgCol)
+	s.inputField = lipgloss.NewStyle().
+				   BorderForeground(s.borderColour).
+				   BorderBackground(s.backgroundColour).
+				   BorderStyle(lipgloss.RoundedBorder()).
+				   Padding(0)
+	s.tableContentStyle = lipgloss.NewStyle().
+	 		   	   Foreground(txtCol).
+				   Background(BgCol).
+				   BorderForeground(s.borderColour).
+				   BorderBackground(s.backgroundColour).
+				   BorderStyle(lipgloss.RoundedBorder()).
+				   Padding(1)
+	s.tableHeaderStyle = s.tableContentStyle.Bold(true)
+	s.errorStyle = lipgloss.NewStyle().Foreground(s.errorColour1).Background(s.backgroundColour)
+	s.lieuHrStyle = lipgloss.NewStyle().Foreground(s.lieuHrColour).Background(s.backgroundColour)
+	return s
+}
 
 
 type model struct {
+	width int
+	height int
 	mode string
+	firstTimeSetup bool
 	lrSkip int
 	taskNum int
 	prompt string
+	errText string
 	choices []string
 	WRchoices []string
 	workCatChoices []string
@@ -57,6 +119,16 @@ type model struct {
 	selected map[int]struct{}
 	textinput  textinput.Model
 	table table.Model
+	errTimer bool
+	pad string
+
+	iniPresent bool
+	inidata *ini.File
+	ref_date string
+	act_hrs float64
+	req_hrs float64
+
+	styles *Styles
 
 	outputRow map[string][]string
 	err     error
@@ -84,10 +156,77 @@ func readCsv(relPath string) [][]string {
 	return records
 }
 
+func initIni() *ini.File {
+	// ini
+	inidata := ini.Empty()
+	sec, err := inidata.NewSection("lieu_hours")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// ref_date
+	y, mnth, d := time.Now().Date()
+	date := fmt.Sprintf("%d-%v-%02d", y, mnth, d)
+	_, err = sec.NewKey("ref_date", date)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// act_hrs_since_ref
+	_, err = sec.NewKey("act_hrs_since_ref", "0")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// req_hrs_since_ref
+	_, err = sec.NewKey("req_hrs_since_ref", "0")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = inidata.SaveTo("./data/options.ini")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return inidata
+}
+
+func updateIni(m *model) {
+	hourSum := calcHours(*m)
+	tdyWkDays, _ := CalcWkDays(m.ref_date)
+
+	m.act_hrs += hourSum
+	m.req_hrs = float64(7 * tdyWkDays)
+	m.inidata.Section("lieu_hours").Key("act_hrs_since_ref").SetValue(strconv.FormatFloat(m.act_hrs, 'f', -1, 32))
+	m.inidata.Section("lieu_hours").Key("req_hrs_since_ref").SetValue(strconv.FormatFloat(m.req_hrs, 'f', -1, 32))
+	m.inidata.Section("lieu_hours").Key("ref_date").SetValue(m.ref_date)
+
+	err := m.inidata.SaveTo("./data/options.ini")
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func calcHours (m model) float64 {
+	hourSum := 0.0
+	for i := 0; i < len(m.outputRow["hours"]); i++ {
+		f, _ := strconv.ParseFloat(m.outputRow["hours"][i], 32)
+		hourSum += f
+	}
+	return hourSum
+}
+
+func applyBackground(m model, s string) string {
+	return bgColourStyle.Width(m.width).Height(m.height).Render(s)
+}
+
 func initialModel() model {
 	today := getDateDiff(0, 0, 0)
 
 	ti := textinput.New()
+	ti.PromptStyle = inputStyle
+	ti.TextStyle = inputStyle
+	ti.PlaceholderStyle = inputStyle.Foreground(placeholderCol)
+	ti.Cursor.Style = inputStyle.Foreground(notHighlightCol)
+	ti.CompletionStyle = lipgloss.NewStyle().Background(highlightCol)
 	ti.Placeholder = "Enter description"
 	ti.Focus()
 	ti.CharLimit = 200
@@ -127,25 +266,90 @@ func initialModel() model {
 	)
 	s := table.DefaultStyles()
 	s.Header = s.Header.
+		Foreground(txtCol).
+		Background(BgCol).
 		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("240")).
+		BorderForeground(borderCol).
+		BorderBackground(BgCol).
 		BorderBottom(true).
+		BorderLeft(false).
+		BorderRight(true).
 		Bold(true)
 	s.Cell = s.Cell.
-		Foreground(lipgloss.Color("#FFFFFF")).
+		Foreground(notHighlightCol).
+		Background(BgCol).
+		BorderStyle(lipgloss.NormalBorder()).
+		BorderForeground(borderCol).
+		BorderBackground(BgCol).
+		BorderBottom(false).
+		BorderLeft(false).
+		BorderRight(true).
 		Bold(false)
 	t.SetStyles(s)
 
+	iniPresent := true
+	inidata, err := ini.Load("./data/options.ini")
+	if err != nil {
+		iniPresent = false
+	}
+
+	var refDate string
+	var actHrs float64
+	var reqHrs float64
+	if iniPresent {
+		refDate = inidata.Section("lieu_hours").Key("ref_date").String()
+		actHrs = inidata.Section("lieu_hours").Key("act_hrs_since_ref").MustFloat64(0.0)
+		reqHrs = inidata.Section("lieu_hours").Key("req_hrs_since_ref").MustFloat64(0.0)
+	} else {
+		refDate = today
+		actHrs = 0.0
+		reqHrs = 0.0
+		inidata = initIni()
+		}
+		
+	wkdaysSinceRef, _ := CalcWkDays(refDate)
+	inidata.Section("lieu_hours").Key("req_hrs_since_ref").SetValue(strconv.FormatFloat(float64(wkdaysSinceRef * 7), 'f', -1, 32))
+
+	var credsExist bool
+	_, err = os.Stat("./data/pass.enc")
+	if err == nil {
+		credsExist = true
+	} else {
+		credsExist = false
+	}
+	var initMode string
+	var prompt string
+	pad := "   "
+	if !credsExist {
+		initMode = "firstTimeSetup"
+		prompt = "\n" + pad + "Howdy partner! I see you haven't set up any login credentials yet.\n" +
+						   pad + "This application automates the signing into the WR environment to update your timesheet.\n" +
+						   pad + "Don't worry, your password will be encrypted and stored in the most secure location of all: your local computer.\n\n" +
+						   pad + "What is your password for the WR Application?\n" + 
+						   pad + "It is recommended that you create a one-off password for this app.\n" + 
+						   pad + "To do so, sign in normally to the WR application, and navigate to System Maintenance > Security > Change Password\n\n"
+		ti.Placeholder = "Enter password"
+		ti.EchoMode = textinput.EchoPassword
+		ti.EchoCharacter = '•'
+	} else {
+		initMode = "dateSelect"
+		prompt = "Which timesheet date would you like to update?\n\n"
+	}
+
 
 	return model{
-		mode: "dateSelect",
+		width: 0,
+		height: 0,
+		mode: initMode,
+		firstTimeSetup: !credsExist,
 		lrSkip: 3,
 		taskNum: 1,
-		prompt: "Which timesheet date would you like to update?\n\n",
+		prompt: prompt,
+		errText: "\n",
 		choices: strings.Split(today, "-"),
 		WRchoices : WRnumsFiltered,
 		workCatChoices: WRcatsFiltered,
-		optionsChoices: []string{"Lieu Hours Setup", "Back to Date Select"},
+		optionsChoices: []string{"Lieu Hours Setup", "Credentials Setup", "Back to Date Select"},
 		highlighted: 2,
 		dayDelta: 0,
 		monthDelta: 0,
@@ -154,6 +358,16 @@ func initialModel() model {
 		selected: make(map[int]struct{}),
 		textinput:  ti,
 		table: t,
+		errTimer: false,
+		pad: pad,
+
+		iniPresent: iniPresent,
+		inidata: inidata,
+		ref_date: refDate,
+		act_hrs: actHrs,
+		req_hrs: reqHrs,
+
+		styles: DefaultStyles(),
 
 		outputRow: map[string][]string{
 			"date": {},
@@ -171,6 +385,11 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+
+	if m.mode == "firstTimeSetup" {
+		return updateCredsSetup(m, msg)
+	}
+
 	if m.mode == "dateSelect" {
 		return updateDateSelect(m, msg)
 	}
@@ -203,8 +422,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return updateLieuHoursSetup(m, msg)
 	}
 
-	if m.mode == "debugMode" {
-		return updateDebugMode(m, msg)
+	if m.mode == "credsSetup" {
+		return updateCredsSetup(m, msg)
+	}
+
+	if m.mode == "exitCLI" {
+		return updateExitCLI(m, msg)
 	}
 
 	return m, nil
@@ -214,6 +437,10 @@ func (m model) View() string {
 	var s string
 	if m.mode == "dateSelect" {
 	s = viewDateSelect(m)
+	}
+
+	if m.mode == "firstTimeSetup" {
+		s = viewCredsSetup(m)
 	}
 
 	if m.mode == "WRselect" {
@@ -244,40 +471,52 @@ func (m model) View() string {
 		s = viewLieuHoursSetup(m)
 	}
 
-	if m.mode == "debugMode" {
-		s = viewDebugMode(m)
+	if m.mode == "credsSetup" {
+		s = viewCredsSetup(m)
+	}
+
+	if m.mode == "exitCLI" {
+		s = viewExitCLI(m)
 	}
 
 	return s
 }
 
-func calcWrkHrs(ref_date_str string) float32 {
-	// FIXME: This is untested!!! 
-	//        Returns number of business days right now, need to return hours (just x7?)
-	inidata, err := ini.Load("./data/options.ini")
-	if err != nil {
-		log.Fatal(err)
-	}
-	ref_date_str = inidata.Section("lieu_hours").Key("ref_date").String()
+func CalcWkDays(ref_date_str string) (int, error) {
 	ref_date, err := time.Parse("2006-January-02", ref_date_str)
 	if err != nil {
-		log.Fatal(err)
+		return 0, err
 	}
 	today := time.Now()
-	var businessDays float32 = 0
+	var businessDays int = 0
 	for {
-		if today.Equal(ref_date) {
-			return businessDays
+		if today.Before(ref_date) {
+			return businessDays, nil
 		}
-		if (today.Weekday() != time.Saturday && today.Weekday() != time.Sunday) {
+		if (ref_date.Weekday() != time.Saturday && ref_date.Weekday() != time.Sunday) {
 			businessDays++
 	   }
-	   today = today.Add(time.Hour*24)
+	   ref_date = ref_date.AddDate(0, 0, 1)
 	}
 }
 
+type errFlash struct {}
+
+func resetColorAfterDuration(d time.Duration) tea.Cmd {
+    return func() tea.Msg {
+        time.Sleep(d)
+        return errFlash{}
+    }
+}
+
 func updateDateSelect(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
+	
+	wkdaysSinceRef, _ := CalcWkDays(m.ref_date)
+	m.inidata.Section("lieu_hours").Key("req_hrs_since_ref").SetValue(strconv.FormatFloat(float64(wkdaysSinceRef * 7), 'f', -1, 32))
+
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width, m.height = msg.Width, msg.Height
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
@@ -320,13 +559,14 @@ func updateDateSelect(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "o":
 			m.mode = "options"
 			m.highlighted = 0
-			m.prompt = "What would you like to do?\n \n"
+			m.prompt = "\n" + m.pad + "What would you like to do?\n\n"
+			m.textinput.Placeholder = "Enter current lieu hours"
 		
 		case "enter":
 			m.outputRow["date"] = append(m.outputRow["date"], getDateDiff(m.yearDelta, m.monthDelta, m.dayDelta))
 			m.mode = "WRselect"
 			m.highlighted = 0
-			m.prompt = "Please select a WR\n \n"
+			m.prompt = "Please select a WR\n\n"
 		}
 	}
 
@@ -335,9 +575,12 @@ func updateDateSelect(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func updateWRSelect(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width, m.height = msg.Width, msg.Height
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
+			m.outputRow = make(map[string][]string)
 			return m, tea.Quit
 		
 		case "up", "w":
@@ -368,40 +611,54 @@ func updateWRSelect(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			m.outputRow["WR"] = append(m.outputRow["WR"], m.WRchoices[m.highlighted])
 			m.mode = "descriptionInput"
-			m.prompt = "Please enter a description of your work\n \n "
+			m.prompt = "Please enter a description of your work"
+			m.errText = "\n"
 			m.textinput.Reset()
 			m.textinput.Placeholder = "Enter description"
 		
 		case "esc":
-			return m, tea.Quit
+			updateIni(&m)
+			m.mode = "exitCLI"
 		}
 	}
 
-	return m, nil
+	return m, textinput.Blink
 }
 
 func updateDescriptionInput(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width, m.height = msg.Width, msg.Height
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
+			m.outputRow = make(map[string][]string)
 			return m, tea.Quit
 		case "enter":
 			_, err := strconv.ParseFloat(m.textinput.Value(), 32)
 			if err == nil {
-				m.prompt = "Please enter a description of your work\nDescription cannot be a number!\n \n "
-			} else if m.textinput.Value() == "" {
-				m.prompt = "Please enter a description of your work\nDescription cannot be blank!\n \n "
+				m.errText = "\nDescription cannot be a number!\n"
+				m.styles.errorStyle = m.styles.errorStyle.Foreground(m.styles.errorColour2)
+				return m, resetColorAfterDuration(500 * time.Millisecond)
+				} else if m.textinput.Value() == "" {
+					m.errText = "\nDescription cannot be blank!\n"
+					m.styles.errorStyle = m.styles.errorStyle.Foreground(m.styles.errorColour2)
+					return m, resetColorAfterDuration(500 * time.Millisecond)
 			} else {
 			m.outputRow["description"] = append(m.outputRow["description"], m.textinput.Value())
 			m.mode = "workCatselect"
-			m.prompt = "Please select a work category\n \n"
+			m.prompt = "Please select a work category\n\n"
+			m.errText = "\n"
 			m.highlighted = 0
 			}
 
 		case "esc":
+			updateIni(&m)
 			m.mode = "exitCLI"
 		}
+	case errFlash:
+		m.errTimer = false
+		m.styles.errorStyle = m.styles.errorStyle.Foreground(m.styles.errorColour1)
 	}
 
 	var cmd tea.Cmd
@@ -411,9 +668,12 @@ func updateDescriptionInput(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func updateWorkCatselect(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width, m.height = msg.Width, msg.Height
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
+			m.outputRow = make(map[string][]string)
 			return m, tea.Quit
 		
 		case "up", "w":
@@ -445,27 +705,35 @@ func updateWorkCatselect(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.outputRow["cat"] = append(m.outputRow["cat"], m.workCatChoices[m.highlighted])
 
 			m.mode = "hoursInput"
-			m.prompt = "Please enter hours worked on this job\n \n "
+			m.prompt = "Please enter hours worked on this job"
+			m.errText = "\n"
 			m.textinput.Reset()
 			m.textinput.Placeholder = "Enter hours worked"
 		case "esc":
+			updateIni(&m)
 			m.mode = "exitCLI"
 		}
 	}
 
-	return m, nil
+	return m, textinput.Blink
 }
 
 func updateHoursInput(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width, m.height = msg.Width, msg.Height
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
+			m.outputRow = make(map[string][]string)
 			return m, tea.Quit
 		case "enter":
 			f, err := strconv.ParseFloat(m.textinput.Value(), 32)
 			if err != nil || f < 0.0 || f > 24.0 {
-			m.prompt = "Enter hours worked\nPlease enter a valid number!\n \n "
+			// m.prompt = "Enter hours worked\nPlease enter a valid number!\n \n "
+			m.errText = "\nPlease enter a valid number!\n"
+			m.styles.errorStyle = m.styles.errorStyle.Foreground(m.styles.errorColour2)
+			return m, resetColorAfterDuration(500 * time.Millisecond)
 			} else {
 				m.outputRow["hours"] = append(m.outputRow["hours"], m.textinput.Value())
 				m.table.SetHeight(len(m.outputRow["WR"]))
@@ -480,14 +748,18 @@ func updateHoursInput(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.table.SetRows(rows)
 				
 				m.mode = "WRselect"
-				m.prompt = "Please select a WR\n \n"
+				m.prompt = "Please select a WR\n\n"
 				m.highlighted = 0
 				m.taskNum += 1
 			}
 
 		case "esc":
+			updateIni(&m)
 			m.mode = "exitCLI"
 		}
+	case errFlash:
+		m.errTimer = false
+		m.styles.errorStyle = m.styles.errorStyle.Foreground(m.styles.errorColour1)
 	}
 
 
@@ -499,9 +771,12 @@ func updateHoursInput(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func updateOptions(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width, m.height = msg.Width, msg.Height
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
+			m.outputRow = make(map[string][]string)
 			return m, tea.Quit
 		
 		case "up", "w":
@@ -532,28 +807,40 @@ func updateOptions(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if m.optionsChoices[m.highlighted] == "Lieu Hours Setup" {
 				m.mode = "lieuHoursSetup"
-				m.prompt = "Before the beginning of today's work day, how many lieu hours did you have available?\n \n "
+				m.prompt = "\n" + m.pad + "Before the beginning of today's work day, how many lieu hours did you have available?\n\n"
+			} else if m.optionsChoices[m.highlighted] == "Credentials Setup" {
+				m.mode = "credsSetup"
+				m.prompt = "\n" + m.pad + "What is your password for the WR Application?\n" + 
+						   m.pad + "It is recommended that you create a one-off password for this app.\n" + 
+						   m.pad + "To do so, sign in normally to the WR application, and navigate to System Maintenance > Security > Change Password\n\n"
+				m.textinput.Placeholder = "Enter password"
+				m.textinput.EchoMode = textinput.EchoPassword
+				m.textinput.EchoCharacter = '•'
 			} else if m.optionsChoices[m.highlighted] == "Back to Date Select" {
 				m.mode = "dateSelect"
 				m.prompt = "Which timesheet date would you like to update?\n\n"
 				m.textinput.Placeholder = "Enter current lieu hours"
 			}
+			m.highlighted = 2
 		}
 	}
 
-	return m, nil
+	return m, textinput.Blink
 }
 
 func updateLieuHoursSetup(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width, m.height = msg.Width, msg.Height
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
+			m.outputRow = make(map[string][]string)
 			return m, tea.Quit
 		case "enter":
 			f, err := strconv.ParseFloat(m.textinput.Value(), 32)
 			if err != nil {
-			m.prompt = "Before the beginning of today's work day, how many lieu hours did you have available?\nPlease enter a valid number!\n \n "
+			m.prompt = "Before the beginning of today's work day, how many lieu hours did you have available?\nPlease enter a valid number!\n\n"
 			} else {
 				// ini
 				inidata := ini.Empty()
@@ -568,16 +855,19 @@ func updateLieuHoursSetup(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 				if err != nil {
 					log.Fatal(err)
 				}
+				m.ref_date = date
 				// act_hrs_since_ref
 				_, err = sec.NewKey("act_hrs_since_ref", strconv.FormatFloat(f, 'f', -1, 32))
 				if err != nil {
 					log.Fatal(err)
 				}
+				m.act_hrs = f
 				// req_hrs_since_ref
 				_, err = sec.NewKey("req_hrs_since_ref", "0")
 				if err != nil {
 					log.Fatal(err)
 				}
+				m.req_hrs = 0
 
 				err = inidata.SaveTo("./data/options.ini")
 				if err != nil {
@@ -586,8 +876,15 @@ func updateLieuHoursSetup(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			m.mode = "dateSelect"
 			m.textinput.Reset()
+			if m.firstTimeSetup {
+				m.prompt = "You're all set up, amigo! My last tidbit of wisdom for you is to change the default dimensions of this app window.\n" +
+				m.pad + "Do this by right-clicking the top of the window, select \"Properties\", and edit the window width in the \"Layout\" tab. I like a width of 160, but you do you.\n" +
+				m.pad + "Which timesheet date would you like to update?\n\n"
+				m.firstTimeSetup = false
+			} else {
 			m.prompt = "Which timesheet date would you like to update?\n\n"
-			m.highlighted = 0
+			}
+			m.highlighted = 2
 			}
 		}
 	}
@@ -599,28 +896,74 @@ func updateLieuHoursSetup(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 
 }
 
-func updateViewTable(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
+func updateCredsSetup(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width, m.height = msg.Width, msg.Height
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
+			m.outputRow = make(map[string][]string)
+			return m, tea.Quit
+		case "enter":
+			if m.firstTimeSetup {
+				m.mode = "lieuHoursSetup"
+				m.prompt = "\n" + m.pad + "One last step! This application can track your lieu hours for you. Let's set it up.\n" +
+							m.pad + "Before the beginning of today's work day, how many lieu hours did you have available?\n\n"
+				m.textinput.Placeholder = "Enter current lieu hours"
+			} else {
+			m.mode = "dateSelect"
+			m.prompt = "Which timesheet date would you like to update?\n\n"
+			m.highlighted = 2
+		}
+		m.textinput.EchoMode = textinput.EchoNormal
+
+			// encrypt password and write to file
+			encryptedPass, err := encrypt([]byte(m.textinput.Value()))
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = os.WriteFile("./data/pass.enc", encryptedPass, 0644)
+			if err != nil {
+				log.Fatal(err)
+			}
+			m.textinput.Reset()
+
+		}
+	}
+
+	var cmd tea.Cmd
+	m.textinput, cmd = m.textinput.Update(msg)
+	return m, cmd
+}
+
+func updateViewTable(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width, m.height = msg.Width, msg.Height
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c":
+			m.outputRow = make(map[string][]string)
 			return m, tea.Quit
 		case "enter":
 			m.outputRow["date"] = append(m.outputRow["date"], getDateDiff(m.yearDelta, m.monthDelta, m.dayDelta))
 			m.mode = "WRselect"
-			m.prompt = "Please select a WR\n \n "
+			m.prompt = "Please select a WR\n\n"
 			m.highlighted = 0
 		}
 	}
 	return m, nil
 }
 
-
-func updateDebugMode(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
+func updateExitCLI(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width, m.height = msg.Width, msg.Height
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c":
+		case "enter":
+			m.mode = "exitForGood"
 			return m, tea.Quit
 		}
 	}
@@ -629,79 +972,85 @@ func updateDebugMode(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func viewDateSelect(m model) string {
 	var s string
-	s += m.prompt
-	for _, choice := range m.choices {
-		s += fmt.Sprintf("%s - ", choice)
-	}
-	s = s[:len(s) - 2] + "   (" + m.dayOfWeek + ")\n"
-	switch m.highlighted {
-	case 0:
-		s += " ^"
-	case 1:
-		s += "         ^"
-	case 2:
-		s += "               ^"
-	}
-	s += "\n\nctl+c: quit | enter: select option | o: options\n" 
+	s += "\n" + m.pad + "CURRENT LIEU HOURS: " + m.styles.lieuHrStyle.Render(strconv.FormatFloat(float64(m.act_hrs - m.req_hrs), 'f', -1, 32))
 
-	return s
+	s += "\n\n" + m.pad + m.prompt
+	for i, choice := range m.choices {
+		if i == m.highlighted {
+			s += m.styles.highlightStyle.Render(choice)
+		} else {
+			s += m.styles.choiceStyle.Render(choice)
+		}
+	}
+	s += m.styles.choiceStyle.Render("   (" + m.dayOfWeek + ")\n")
+
+	s += "\n\n" + m.pad + "ctl+c: quit | ←↑↓→: change date | enter: select date | o: options\n" 
+
+
+	return applyBackground(m, s)
 }
 
 func viewWRSelect(m model) string {
 	s := viewTable(m) + "\n\n"
-	s += "TASK " + strconv.Itoa(m.taskNum) + " - " + m.prompt
+	s += m.pad + "TASK " + strconv.Itoa(m.taskNum) + " - " + m.prompt
 	for i, choice := range m.WRchoices {
-		cursor := " "
+		s += m.pad
 		if m.highlighted == i {
-			cursor = ">"
+			s += m.styles.highlightStyle.Render(choice)
+		} else{
+		s += m.styles.choiceStyle.Render(choice)
 		}
-		s += fmt.Sprintf("%s[%d] %s\n", cursor, i + 1, choice)
+		s += "\n"
 	}
 
-	s += "\n\nctl+c: quit | enter: select option | esc: write to timesheet\n" 
+	s += "\n\n" + m.pad + "ctl+c: quit | ↑↓: navigate | enter: select option | esc: write to timesheet\n" 
 
-	return s
+	return applyBackground(m, s)
 }
 
 func viewDescriptionInput(m model) string {
 	s := viewTable(m) + "\n\n"
-	s += "TASK " + strconv.Itoa(m.taskNum) + " - " + m.prompt + m.textinput.View() + "\n\nq: quit | enter: submit | esc: write to timesheet\n"
-	return s
+	s += m.pad + "TASK " + strconv.Itoa(m.taskNum) + " - " + m.prompt + m.styles.errorStyle.Render(m.errText) + "\n" +
+		  m.styles.inputField.Render(m.textinput.View()) + 
+		  "\n\n" + m.pad + "q: quit | enter: submit | esc: write to timesheet\n"
+	
+	return applyBackground(m, s)
 }
 
 func viewWorkCatselect(m model) string {
 	s := viewTable(m) + "\n\n"
-	s += "TASK " + strconv.Itoa(m.taskNum) + " - " + m.prompt
+	s += m.pad + "TASK " + strconv.Itoa(m.taskNum) + " - " + m.prompt
 	for i, choice := range m.workCatChoices {
-		cursor := " "
+		s += m.pad
 		if m.highlighted == i {
-			cursor = ">"
+			s += m.styles.highlightStyle.Render(choice)
+		} else{
+		s += m.styles.choiceStyle.Render(choice)
 		}
-		s += fmt.Sprintf("%s[%d] %s\n", cursor, i + 1, choice)
+		s += "\n"
 	}
 
-	s += "\n\nctl+c: quit | enter: select option | esc: write to timesheet\n" 
+	s += "\n\n" + m.pad + "ctl+c: quit | ↑↓: navigate | enter: select option | esc: write to timesheet\n" 
 
-	return s
+	return applyBackground(m, s)
 }
 
 func viewHoursInput(m model) string {
 	var s string
 	s += viewTable(m) + "\n\n"
-	s += "TASK " + strconv.Itoa(m.taskNum) + " - " + m.prompt + m.textinput.View() + "\n\nq: quit | enter: submit | esc: write to timesheet\n"
-	return s
+	s += m.pad + "TASK " + strconv.Itoa(m.taskNum) + " - " + m.prompt + m.styles.errorStyle.Render(m.errText) + "\n" +
+	m.styles.inputField.Render(m.textinput.View()) + 
+	"\n\n" + m.pad + "ctl+c: quit | enter: submit | esc: write to timesheet\n"
+	return applyBackground(m, s)
 }
 
 func viewTable(m model) string {
 	var s string
-	s += m.table.View()
-	hourSum := 0.0
+	s += lipgloss.NewStyle().Padding(1, 2).Background(m.styles.backgroundColour).Render(m.table.View())
 
-	for i := 0; i < len(m.outputRow["hours"]); i++ {
-		f, _ := strconv.ParseFloat(m.outputRow["hours"][i], 32)
-		hourSum += f
-	}
-	s += fmt.Sprintf("\nTotal hours: %.2f\n", hourSum)
+	hourSum := calcHours(m)
+
+	s += fmt.Sprintf("\n   Total hours: %.2f\n", hourSum)
 	return s
 }
 
@@ -709,33 +1058,43 @@ func viewOptions(m model) string {
 	var s string
 	s += m.prompt
 	for i, choice := range m.optionsChoices {
-		cursor := " "
+		s += m.pad
 		if m.highlighted == i {
-			cursor = ">"
+			s += m.styles.highlightStyle.Render(choice)
+		} else{
+		s += m.styles.choiceStyle.Render(choice)
 		}
-		s += fmt.Sprintf("%s %s\n", cursor, choice)
+		s += "\n"
 	}
 
-	s += "\n\nctl+c: quit | enter: select option\n"
+	s += "\n\n" + m.pad + "ctl+c: quit | ↑↓: navigate | enter: select option\n"
 
-	return s
+	return applyBackground(m, s)
 }
 
 func viewLieuHoursSetup(m model) string {
 	var s string
-	s += m.prompt + m.textinput.View() + "\n\nctl+c: quit | enter: submit\n"
-	return s
+	s += m.prompt + 
+	m.styles.inputField.Render(m.textinput.View()) + 
+	"\n\n" + m.pad + "ctl+c: quit | enter: submit\n"
+	return applyBackground(m, s)
 }
 
-func viewDebugMode(m model) string {
+func viewCredsSetup(m model) string {
 	var s string
+	s += m.prompt + 
+	m.styles.inputField.Render(m.textinput.View()) + 
+	"\n\n" + m.pad + "ctl+c: quit | enter: submit\n"
+	return applyBackground(m, s)
+}
 
-	s += fmt.Sprintf("Selected Date: %s\n", m.outputRow["date"])
-	s += fmt.Sprintf("Selected WR: %s\n", m.outputRow["WR"])
-	s += fmt.Sprintf("Selected Description: %s\n", m.outputRow["description"])
-	s += fmt.Sprintf("Selected hours worked: %s\n", m.outputRow["hours"])
+func viewExitCLI(m model) string {
+	lieu := m.act_hrs - m.req_hrs
+	
+	var s string
+	s += "\n" + "Your new balance of lieu hours is: "
+	s += m.styles.lieuHrStyle.Render(strconv.FormatFloat(float64(lieu), 'f', -1, 32))
+	s += lipgloss.NewStyle().Background(BgCol).Render("\n\nenter: continue\n")
 
-	s += "\n\nPress ctl+c to quit\n"
-
-	return s
+	return applyBackground(m, s)
 }
