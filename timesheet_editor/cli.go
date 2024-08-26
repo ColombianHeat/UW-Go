@@ -17,6 +17,8 @@ import (
 	"gopkg.in/ini.v1"
 )
 
+// CliModel runs the tea program and returns the output table.
+// Returns a map of strings to slices of strings.
 func CliModel() (outTable map[string][]string) {
 	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
 	
@@ -30,6 +32,9 @@ func CliModel() (outTable map[string][]string) {
 	return output
 }
 
+
+// Styles
+//
 const (
 	txtCol  = lipgloss.Color("#e0b6d9")
 	borderCol = lipgloss.Color("#767676")
@@ -63,6 +68,7 @@ type Styles struct {
 	errorColour2 lipgloss.Color
 	lieuHrColour lipgloss.Color
 	lieuHrStyle lipgloss.Style
+	helpStyle lipgloss.Style
 }
 
 func DefaultStyles() *Styles {
@@ -94,10 +100,13 @@ func DefaultStyles() *Styles {
 	s.tableHeaderStyle = s.tableContentStyle.Bold(true)
 	s.errorStyle = lipgloss.NewStyle().Foreground(s.errorColour1).Background(s.backgroundColour)
 	s.lieuHrStyle = lipgloss.NewStyle().Foreground(s.lieuHrColour).Background(s.backgroundColour)
+	s.helpStyle = lipgloss.NewStyle().Foreground(s.borderColour).Background(s.backgroundColour)
 	return s
 }
 
 
+// Model initialization
+//
 type model struct {
 	width int
 	height int
@@ -141,6 +150,7 @@ func getDateDiff(deltaYears int, deltaMonths int, deltaDays int) string {
 	return fmt.Sprintf("%d-%v-%02d", y, mnth, d)
 }
 
+// for reading csvs of custom WR categories and numbers
 func readCsv(relPath string) [][]string {
 	csvFile, err := os.Open(relPath)
 	if err != nil {
@@ -156,6 +166,7 @@ func readCsv(relPath string) [][]string {
 	return records
 }
 
+// .ini is used to track lieu hours. Reference date is the date it is first initialized
 func initIni() *ini.File {
 	// ini
 	inidata := ini.Empty()
@@ -384,6 +395,9 @@ func (m model) Init() tea.Cmd {
 	return nil
 }
 
+
+// Update fnc
+//
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.mode == "firstTimeSetup" {
@@ -433,6 +447,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+
+// View fnc
+//
 func (m model) View() string {
 	var s string
 	if m.mode == "dateSelect" {
@@ -972,7 +989,7 @@ func updateExitCLI(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func viewDateSelect(m model) string {
 	var s string
-	s += "\n" + m.pad + "CURRENT LIEU HOURS: " + m.styles.lieuHrStyle.Render(strconv.FormatFloat(float64(m.act_hrs - m.req_hrs), 'f', -1, 32))
+	s += "\n" + m.pad + "CURRENT LIEU HOURS: " + m.styles.lieuHrStyle.Render(strconv.FormatFloat(float64(m.act_hrs - m.req_hrs), 'f', 2, 32))
 
 	s += "\n\n" + m.pad + m.prompt
 	for i, choice := range m.choices {
@@ -984,7 +1001,7 @@ func viewDateSelect(m model) string {
 	}
 	s += m.styles.choiceStyle.Render("   (" + m.dayOfWeek + ")\n")
 
-	s += "\n\n" + m.pad + "ctl+c: quit | ←↑↓→: change date | enter: select date | o: options\n" 
+	s += "\n\n" + m.pad + m.styles.helpStyle.Render("ctl+c: quit | ←↑↓→: change date | enter: select date | o: options\n") 
 
 
 	return applyBackground(m, s)
@@ -1003,7 +1020,7 @@ func viewWRSelect(m model) string {
 		s += "\n"
 	}
 
-	s += "\n\n" + m.pad + "ctl+c: quit | ↑↓: navigate | enter: select option | esc: write to timesheet\n" 
+	s += "\n\n" + m.pad + m.styles.helpStyle.Render("ctl+c: quit | ↑↓: navigate | enter: select option | esc: write to timesheet\n") 
 
 	return applyBackground(m, s)
 }
@@ -1012,7 +1029,7 @@ func viewDescriptionInput(m model) string {
 	s := viewTable(m) + "\n\n"
 	s += m.pad + "TASK " + strconv.Itoa(m.taskNum) + " - " + m.prompt + m.styles.errorStyle.Render(m.errText) + "\n" +
 		  m.styles.inputField.Render(m.textinput.View()) + 
-		  "\n\n" + m.pad + "q: quit | enter: submit | esc: write to timesheet\n"
+		  "\n\n" + m.pad + m.styles.helpStyle.Render("q: quit | enter: submit | esc: write to timesheet\n")
 	
 	return applyBackground(m, s)
 }
@@ -1030,7 +1047,7 @@ func viewWorkCatselect(m model) string {
 		s += "\n"
 	}
 
-	s += "\n\n" + m.pad + "ctl+c: quit | ↑↓: navigate | enter: select option | esc: write to timesheet\n" 
+	s += "\n\n" + m.pad + m.styles.helpStyle.Render("ctl+c: quit | ↑↓: navigate | enter: select option | esc: write to timesheet\n")
 
 	return applyBackground(m, s)
 }
@@ -1040,7 +1057,7 @@ func viewHoursInput(m model) string {
 	s += viewTable(m) + "\n\n"
 	s += m.pad + "TASK " + strconv.Itoa(m.taskNum) + " - " + m.prompt + m.styles.errorStyle.Render(m.errText) + "\n" +
 	m.styles.inputField.Render(m.textinput.View()) + 
-	"\n\n" + m.pad + "ctl+c: quit | enter: submit | esc: write to timesheet\n"
+	"\n\n" + m.pad + m.styles.helpStyle.Render("ctl+c: quit | enter: submit | esc: write to timesheet\n")
 	return applyBackground(m, s)
 }
 
@@ -1050,7 +1067,7 @@ func viewTable(m model) string {
 
 	hourSum := calcHours(m)
 
-	s += fmt.Sprintf("\n   Total hours: %.2f\n", hourSum)
+	s += "\n   Total hours: " + m.styles.lieuHrStyle.Render(strconv.FormatFloat(hourSum, 'f', 2, 32) + "\n")
 	return s
 }
 
@@ -1067,7 +1084,7 @@ func viewOptions(m model) string {
 		s += "\n"
 	}
 
-	s += "\n\n" + m.pad + "ctl+c: quit | ↑↓: navigate | enter: select option\n"
+	s += "\n\n" + m.pad + m.styles.helpStyle.Render("ctl+c: quit | ↑↓: navigate | enter: select option\n")
 
 	return applyBackground(m, s)
 }
@@ -1076,7 +1093,7 @@ func viewLieuHoursSetup(m model) string {
 	var s string
 	s += m.prompt + 
 	m.styles.inputField.Render(m.textinput.View()) + 
-	"\n\n" + m.pad + "ctl+c: quit | enter: submit\n"
+	"\n\n" + m.pad + m.styles.helpStyle.Render("ctl+c: quit | enter: submit\n")
 	return applyBackground(m, s)
 }
 
@@ -1084,7 +1101,7 @@ func viewCredsSetup(m model) string {
 	var s string
 	s += m.prompt + 
 	m.styles.inputField.Render(m.textinput.View()) + 
-	"\n\n" + m.pad + "ctl+c: quit | enter: submit\n"
+	"\n\n" + m.pad + m.styles.helpStyle.Render("ctl+c: quit | enter: submit\n")
 	return applyBackground(m, s)
 }
 
@@ -1094,7 +1111,7 @@ func viewExitCLI(m model) string {
 	var s string
 	s += "\n" + "Your new balance of lieu hours is: "
 	s += m.styles.lieuHrStyle.Render(strconv.FormatFloat(float64(lieu), 'f', -1, 32))
-	s += lipgloss.NewStyle().Background(BgCol).Render("\n\nenter: continue\n")
+	s += m.styles.helpStyle.Render("\n\nenter: continue\n")
 
 	return applyBackground(m, s)
 }

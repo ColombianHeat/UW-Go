@@ -12,11 +12,12 @@ import (
 )
 
 // TODO: Bold the text displaying user controls. eg: ctrl+c: quit
+// TODO: Edit/delete functionality in CLI
+// TODO: Ability to update for multiple dates in one push
 func main() {
 	var outTable map[string][]string = CliModel()
 	if len(outTable["hours"]) == 0 {
 		fmt.Print("\nNo complete entries found. Exiting Program...")
-		fmt.Scanln()
 		os.Exit(0)
 	}
 	nExisting := updateDB(outTable)
@@ -43,12 +44,14 @@ func main() {
 	robotgo.KeyTap("tab")
 	robotgo.KeyTap("enter")
 	waitForProcess("Work Requests")
+	// wait for splash screen animation to end
 	time.Sleep(3000 * time.Millisecond) //TODO: is there a way to not depend on a guess of absolute time?
 
 	goToTimesheet()
 	robotgo.ActiveName("Work Requests")
 	robotgo.KeySleep = 25
 	fillTimesheet(outTable, nExisting)
+	os.Exit(0)
 }
 
 func openMSAccess() {
@@ -74,6 +77,7 @@ func openMSAccess() {
 // 	}
 // }
 
+// waits for specified process to become active
 func waitForProcess(processName string) {
 	for {
 		robotgo.ActiveName(processName)
@@ -97,6 +101,8 @@ func goToTimesheet() {
 	robotgo.KeyTap("enter")
 }
 
+// Uses output of CLI function to fill in timesheet
+// Map of slices contains the following keys: date, WR, hours, cat, description
 func fillTimesheet(cliData map[string][]string, nExisting int) {
 	date := cliData["date"][0]
 	robotgo.KeyTap("tab")
@@ -123,6 +129,8 @@ func fillTimesheet(cliData map[string][]string, nExisting int) {
 	}
 }
 
+// bbolt database used for tracking how many entries exist for each date
+// if a date is independently updated twice, the second set of entries will not overwrite the first
 func updateDB(outTable map[string][]string) int {
 	// open db. If not exists, create
 	db, err := bolt.Open("./data/dailyEntries.db", 0600, nil) // 0600 - read-write permission
