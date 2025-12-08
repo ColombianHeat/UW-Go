@@ -20,8 +20,8 @@ func main() {
 		fmt.Print("\nNo complete entries found. Exiting Program...")
 		os.Exit(0)
 	}
-	nExisting := updateDB(outTable)
 
+	
 	// read encrypted password from file
 	encryptedPass, err := os.ReadFile("./data/pass.enc")
 	if err != nil {
@@ -34,22 +34,29 @@ func main() {
 		log.Fatal(err)
 	}
 	
-
+	
 	openMSAccess()
-
+	
 	// Sign into MS Access, navigate to timesheet, and fill in timesheet
 	robotgo.KeySleep = 100
 	waitForProcess("Logon")
 	robotgo.TypeStr(string(decryptedPass))
 	robotgo.KeyTap("tab")
-	robotgo.KeyTap("enter")
+	robotgo.KeyTap("enter") // logs in
+
+	// exits gracefully if we wanted to open the app without editing anything
+	if outTable["hours"][0] == "openAppOnly" {
+		os.Exit(0) 
+	}
+
 	waitForProcess("Work Requests")
 	// wait for splash screen animation to end
 	time.Sleep(3000 * time.Millisecond) //TODO: is there a way to not depend on a guess of absolute time?
-
+	
 	goToTimesheet()
 	robotgo.ActiveName("Work Requests")
 	robotgo.KeySleep = 25
+	nExisting := updateDB(outTable)
 	fillTimesheet(outTable, nExisting)
 	os.Exit(0)
 }

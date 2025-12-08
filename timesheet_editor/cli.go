@@ -360,7 +360,7 @@ func initialModel() model {
 		choices: strings.Split(today, "-"),
 		WRchoices : WRnumsFiltered,
 		workCatChoices: WRcatsFiltered,
-		optionsChoices: []string{"Lieu Hours Setup", "Credentials Setup", "Back to Date Select"},
+		optionsChoices: []string{"Open WR Application", "Lieu Hours Setup", "Credentials Setup", "Back to Date Select"},
 		highlighted: 2,
 		dayDelta: 0,
 		monthDelta: 0,
@@ -825,6 +825,9 @@ func updateOptions(m model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.optionsChoices[m.highlighted] == "Lieu Hours Setup" {
 				m.mode = "lieuHoursSetup"
 				m.prompt = "\n" + m.pad + "Before the beginning of today's work day, how many lieu hours did you have available?\n\n"
+			} else if m.optionsChoices[m.highlighted] == "Open WR Application" {
+				m.outputRow["hours"] = append(m.outputRow["hours"], "openAppOnly")
+				m.mode = "exitCLI"
 			} else if m.optionsChoices[m.highlighted] == "Credentials Setup" {
 				m.mode = "credsSetup"
 				m.prompt = "\n" + m.pad + "What is your password for the WR Application?\n" + 
