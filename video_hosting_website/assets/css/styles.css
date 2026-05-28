@@ -1,0 +1,22 @@
+:root {
+    --main-bg-colour: #343741;
+    --main-fnt-colour: #e6e6e6;
+    --accent-colour: #6e6920;
+    --main-typeface: "Helvetica", sans-serif;
+}
+
+body {
+    background: var(--main-bg-colour);
+    margin-left: 260px;
+    margin-right: 270px;
+    margin-bottom: 150px;
+    margin-top: 0%;
+}
+
+h1 {
+    text-align: left;
+    font-size: 2em;
+    color: var(--main-fnt-colour);
+    margin-bottom: 1em;
+    font-family: var(--main-typeface);
+}

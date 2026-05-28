@@ -1,0 +1,128 @@
+@media print {
+    @page {
+        size: auto;
+
+        @bottom-right-corner {
+            font-size: 11pt;
+            content: "Page " counter(page) " of " counter(pages);
+        }
+    }
+
+    h1,
+    h2,
+    h3 {
+        page-break-after: avoid;
+    }
+
+    h1 + p,
+    h2 + p,
+    h3 + p {
+        page-break-before: avoid;
+    }
+
+    body {
+        margin-left: 10%;
+        margin-right: 10%;
+    }
+
+    body,
+    p,
+    ul,
+    pre {
+        font-family: "New Century Schoolbook", TeX Gyre Schola, serif;
+        font-size: 11pt;
+        text-align: left;
+    }
+
+    caption {
+        margin-top: 0.5em;
+        font-family: "New Century Schoolbook", TeX Gyre Schola, serif;
+        font-style: italic;
+        font-size: 10pt;
+        text-align: left;
+    }
+
+    ul,
+    ol,
+    dl {
+        page-break-before: avoid;
+    }
+
+    h1 {
+        text-align: left;
+        font-size: 26pt;
+        margin-bottom: 0em;
+        font-family: "New Century Schoolbook", TeX Gyre Schola, serif;
+    }
+
+    h2 {
+        text-align: left;
+        font-size: 18pt;
+        margin-bottom: -0.5em;
+        font-family: "New Century Schoolbook", TeX Gyre Schola, serif;
+    }
+
+    h3 {
+        text-align: left;
+        font-size: 14pt;
+        margin-bottom: -0.5em;
+        font-family: "New Century Schoolbook", TeX Gyre Schola, serif;
+    }
+
+    img {
+        width: 100%;
+        margin-top: 0.25em;
+        margin-bottom: 0.25em;
+        page-break-inside: avoid;
+    }
+
+    table {
+        /* table-layout: fixed; */
+        /* width: 100%; */
+        /* max-width: 100%; */
+        margin: 0.3em;
+        font-family: "New Century Schoolbook", TeX Gyre Schola, serif;
+        border: 1.5pt solid black;
+        page-break-inside: avoid;
+        border-collapse: collapse;
+    }
+
+    thead tr {
+        text-align: left;
+    }
+
+    th,
+    td {
+        padding: 0.3em;
+        word-wrap: break-word;
+        text-align: left;
+        border: 1.5pt solid black;
+        border-collapse: collapse;
+    }
+
+    td.img-table,
+    table.img-table {
+        border: none;
+        box-shadow: none;
+        border-collapse: separate;
+    }
+
+    #header-widgets,
+    #topBtn,
+    #noTextBtn,
+    #left-sidebar,
+    nav,
+    button,
+    .anchor-link,
+    .sidebar,
+    .content-ads,
+    .make-comment,
+    .author-bio,
+    .heading,
+    .related-posts,
+    #footer,
+    .site-title img,
+    .logo {
+        display: none;
+    }
+}

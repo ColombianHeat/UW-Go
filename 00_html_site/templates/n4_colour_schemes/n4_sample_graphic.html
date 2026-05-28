@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <head>
+        <link href="/assets/css/n4_sample_graphic.css" media="screen" rel="stylesheet" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+            rel="stylesheet"
+        />
+        <nav id="top-nav">
+            <ul>
+                <span onclick="openNav()"><a href="#">MENU BUTTON</a></span>
+                <li>
+                    <h5>This is an Example of a Title Banner</h5>
+                </li>
+            </ul>
+            <hr>
+        </nav>
+        <script src="/assets/js/n4_colour_schemes/n4_sample_graphic.js"></script>
+    </head>
+
+    <body>
+        <div id="mySidenav" class="sidenav">
+            <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+            <b class="title">NAVIGATION</b>
+            <hr>
+            <a href="#"><b>Floor Plan</b></a>
+            <a href="#"><b>AHU 1</b></a>
+            <a href="#"><b>AHU 2</b></a>
+            <a href="#"><b>Boilers</b></a>
+            <a href="#"><b>DHW</b></a>
+        </div>
+        <img src="/assets/img/n4_colour_schemes/logo-horizontal_blackfont-.webp" id="topblackfontlogo">
+        <img src="/assets/img/n4_colour_schemes/logo-horizontal_whitefont-.webp" id="topwhitefontlogo">
+        <img src="/assets/img/n4_colour_schemes/logo-horizontal_blackfont-.webp" id="botblackfontlogo">
+        <img src="/assets/img/n4_colour_schemes/logo-horizontal_whitefont-.webp" id="botwhitefontlogo">
+        <div id="main">
+            
+            <div id="colourPickers">
+            <label for="bgcolour">Select a background colour:</label>
+            <input type="color" id="bgcolour" name="bgcolour" value="#343741" />
+            <label for="accentcolour">Select an accent colour:</label>
+            <input type="color" id="accentcolour" name="accentcolour" value="#6e6920" />
+            <label for="fontcolour">Select a font colour:</label>
+            <input type="color" id="fontcolour" name="fontcolour" value="#e6e6e6" />
+            <label for="bannercolour">Select a banner colour:</label>
+            <input type="color" id="bannercolour" name="bannercolour" value="#ffffff" />
+            <label for="bannerfontcolour">Select a banner font colour:</label>
+            <input type="color" id="bannerfontcolour" name="bannerfontcolour" value="#272931" />
+            <label for="menucolour">Select a nav menu colour:</label>
+            <input type="color" id="menucolour" name="menucolour" value="#222222" /></div>
+            <p>Presets:</p>
+            <div id="themePresets">
+                <button type="button" class="allButtons presetButton" id="insightPreset">The Classic</button>
+                <button type="button" class="allButtons presetButton" id="ainsworthPreset">Ainsworth Default</button>
+                <button type="button" class="allButtons presetButton" id="ainsworthYellow">Ainsworth Yellow</button>
+                <button type="button" class="allButtons presetButton" id="energyPreset">Energy Reports</button>
+                <button type="button" class="allButtons presetButton" id="lightPreset">UW Website</button>
+                <button type="button" class="allButtons presetButton" id="tonyPreset">Tony's Preset</button>
+                <button type="button" class="allButtons presetButton" id="alanPreset">Alan's Preset</button>
+                <button type="button" class="allButtons presetButton" id="dipakGreenPreset">Dipak Green Preset</button>
+                <button type="button" class="allButtons presetButton" id="dipakPinkPreset">Dipak Pink Preset</button>
+                <button type="button" class="allButtons presetButton" id="luckyPreset">I'm Feeling Lucky</button>
+            </div></div>
+            <h1>Sample Graphic 123 <a href="" id="switchImageLink">(SWITCH)</a></h1>
+            <button type="button" class="allButtons" id="overridden">This point is overridden</button>
+            <button type="button" class="allButtons" id="inAlarm">This point is in alarm</button>
+            <br>
+            <img src="/assets/img/n4_colour_schemes/VAV-sample.png" height="400px" id="vav"/>
+            <p class="caption">This is a caption for VAV box 123</p>
+            <p>And this is basic description text. It could be anything you really want it to be, I just 
+                needed something to show up here so we could all see how a proper graphics page looks like 
+                if it has a paragraph of instructions on it or something. What do you think? Does it give you 
+                a good impression of what a finished product could look like? Let's add some Latin 
+                to round out the paragraph. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do 
+                eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis 
+                nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute 
+                irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. 
+                Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit 
+                anim id est laborum.
+            </p>
+        </div>
+    </body>
+</html>

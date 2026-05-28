@@ -1,0 +1,236 @@
+:root {
+    --main-bg-colour: #343741;
+    --main-fnt-colour: #e6e6e6;
+    --accent-colour: #6e6920;
+    --banner-colour: #272931;
+    --menu-colour: #272931;
+    --banner-font-colour: #e6e6e6;
+    --title-typeface: "Bureau Grotesque", "Barlow Condensed", sans-serif;
+    --content-typeface: "Le Monde Livre", "Georgia", serif;
+    --caption-typeface: "Typ1451", "Verdana", sans-serif;
+}
+
+::selection {
+    background: var(--accent-colour);
+    /* color: black; */
+}
+
+/* Nav Sytyles */
+nav ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: var(--banner-colour);
+}
+
+nav li {
+    /* float: left; */
+    text-align: center;
+}
+
+nav li h5 {
+    display: block;
+    color: var(--banner-font-colour);
+    text-align: center;
+    padding: 0px 0px;
+    text-decoration: none;
+}
+
+hr {
+    color: var(--main-bg-colour);
+    border-top: 1px solid var(--accent-colour);
+    margin: 0;
+    padding: 0px 10px;
+}
+
+/* nav li a:hover {
+    background-color: var(--accent-colour);
+} */
+body {
+    background: var(--main-bg-colour);
+    /* margin-left: 260px;
+    margin-right: 270px; */
+    /* margin-bottom: 150px;
+    margin-top: 0%; */
+}
+p,
+ul,
+ol,
+label,
+.allButtons {
+    text-align: left;
+    font-size: 1em;
+    color: var(--main-fnt-colour);
+    margin-bottom: 0.3em;
+    line-height: 1.35em;
+    font-family: var(--content-typeface);
+}
+
+p,
+#vav,
+h1 {
+    margin-left: 300px;
+    margin-right: 300px;
+}
+
+#themePresets {
+    margin-left: 300px;
+}
+
+a {
+    color: var(--accent-colour);
+    opacity: 0.85;
+}
+
+a:hover {
+    opacity: 1;
+}
+
+h1 {
+    font-size: 2.5em;
+    color: var(--main-fnt-colour);
+    margin-bottom: 1em;
+    font-family: var(--title-typeface);
+}
+
+h5 {
+    font-size: 2.5em;
+    color: var(--main-fnt-colour);
+    margin-bottom: 1em;
+    font-family: var(--title-typeface);
+}
+
+.presetButton {
+    background-color: var(--accent-colour);
+    border: 1px solid var(--main-fnt-colour);
+    color: var(--main-fnt-colour);
+    cursor: pointer;
+    transition: transform 0.05s;
+}
+
+.presetButton:hover {
+    transform: scale(0.99);
+}
+
+#overridden {
+    background-color: #d889fe;
+    border: 1px solid var(--main-fnt-colour);
+    color: var(--main-fnt-colour);
+    margin-left: 300px;
+    margin-right: 300px;
+}
+
+#inAlarm {
+    background-color: #fb1701;
+    border: 1px solid var(--main-fnt-colour);
+    color: var(--main-fnt-colour);
+}
+
+.caption {
+    text-align: left;
+    font-size: 0.75em;
+    color: var(--main-fnt-colour);
+    margin-bottom: 3em;
+    line-height: 0.8em;
+    font-family: var(--caption-typeface);
+}
+
+.sidenav {
+    height: 100%; /* 100% Full-height */
+    width: 0; /* 0 width - change this with JavaScript */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Stay on top */
+    top: 0; /* Stay at the top */
+    left: 0;
+    background-color: var(--menu-colour);
+    overflow-x: hidden; /* Disable horizontal scroll */
+    padding-top: 60px; /* Place content 60px from the top */
+    transition: 0.5s; /* 0.5 second transition effect to slide in the sidenav */
+}
+
+/* The navigation menu links */
+.sidenav a {
+    padding: 8px 8px 8px 32px;
+    text-decoration: none;
+    font-size: 25px;
+    color: var(--main-fnt-colour);
+    display: block;
+    transition: 0.3s;
+}
+
+/* When you mouse over the navigation links, change their color */
+.sidenav a:hover {
+    color: var(--accent-colour);
+    background-color: #1d1d1d;
+}
+
+.sidenav .title {
+    color: var(--accent-colour);
+    padding: 8px 8px 8px 32px;
+    text-decoration: none;
+    font-size: 25px;
+    display: block;
+}
+
+/* Position and style the close button (top right corner) */
+.sidenav .closebtn {
+    position: absolute;
+    top: 0;
+    right: 25px;
+    font-size: 36px;
+    margin-left: 50px;
+}
+
+/* Style page content - use this if you want to push the page content to the right when you open the side navigation */
+#main {
+    transition: margin-left 0.5s;
+    padding: 20px;
+}
+
+/* On smaller screens, where height is less than 450px, change the style of the sidenav (less padding and a smaller font size) */
+@media screen and (max-height: 450px) {
+    .sidenav {
+        padding-top: 15px;
+    }
+    .sidenav a {
+        font-size: 18px;
+    }
+}
+
+#colourPickers {
+    display: flex;
+    justify-content: space-between;
+    max-width: 1700px;
+    margin: 0 auto;
+    /* background: #a0c5e8; */
+    padding: 10px 0;
+}
+
+#topblackfontlogo {
+    height: 100px;
+    position: absolute;
+    top: 0;
+    right: 20%;
+}
+
+#topwhitefontlogo {
+    height: 100px;
+    position: absolute;
+    top: 0;
+    right: 10%;
+}
+
+#botblackfontlogo {
+    height: 100px;
+    position: fixed;
+    bottom: 0;
+    right: 8%;
+}
+
+#botwhitefontlogo {
+    height: 100px;
+    position: fixed;
+    bottom: 0;
+    right: 0%;
+}

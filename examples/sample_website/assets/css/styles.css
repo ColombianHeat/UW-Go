@@ -1,0 +1,49 @@
+body {
+    width: 90% auto;
+    margin: 30px;
+}
+header b {
+    margin-left: 30px;
+    margin-top: 20px;
+    float: left;
+    font-size: 30px;
+}
+
+nav {
+    clear: both;
+}
+
+nav ul {
+    background-color: black;
+    height: 80px;
+}
+
+nav ul li {
+    display: inline-block;
+    text-decoration: none;
+    color: white;
+    font-size: 30px;
+    padding: 20px;
+    margin-right: 50px;
+}
+
+nav ul li a {
+    color: white;
+    text-decoration: none;
+}
+
+nav ul li a:hover {
+    background-color: white;
+    color: black;
+}
+
+nav ul li:hover {
+    background-color: white;
+    color: black;
+}
+
+#TuxMask {
+    width: 100px;
+    height: 100px;
+    float: left;
+}

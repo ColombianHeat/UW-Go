@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <head>
+        <!-- TODO: change title -->
+        <title>CMH Smoky Kitchen</title>
+        {{template "report_head"}} {{template "report_head_fncs"}}
+        <!-- NOTE: Uncomment next line if report contains Plotly plots: -->
+        <!-- <script charset="utf-8" src="../../plotly.min.js"></script> -->
+    </head>
+
+    <body>
+        <div id="wtr-progress" class="top shown mute">
+            <div id="wtr-slider"></div>
+        </div>
+        <div class="post__content">
+            <aside>
+                <div id="left-sidebar">
+                    <h4>Index</h4>
+                </div>
+            </aside>
+            <div id="left-ruler"></div>
+            <div id="right-ruler"></div>
+            <!-- /header. TODO: Add </div> and </html> tags to the end of the report -->
+
+            <div class="cell border-box-sizing code_cell rendered"></div>
+            <div class="cell border-box-sizing code_cell rendered"></div>
+            <div class="cell border-box-sizing code_cell rendered"></div>
+            <div class="cell border-box-sizing text_cell rendered">
+                <div class="inner_cell">
+                    <div class="text_cell_render border-box-sizing rendered_html">
+                        <h1 id="CMH-Kitchen-Low-Exhaust-Issues">
+                            CMH Kitchen Low Exhaust Issues<a
+                                class="anchor-link"
+                                href="#CMH-Kitchen-Low-Exhaust-Issues"
+                                >¶</a
+                            >
+                        </h1>
+                        <h2 id="Introduction">
+                            Introduction<a class="anchor-link" href="#Introduction">¶</a>
+                        </h2>
+                        <p>
+                            The kitchen in CMH has been having issues with insufficient exhaust, causing the
+                            smoke produced by the grills to remain in the space. The kitchen's exhaust system
+                            is made up of two AHUs, AHU-3 and AHU-4. Each AHU has an exhaust fan which is
+                            turned on when the cooking day begins. Four ducts feed the fan. However, the
+                            fourth duct seems to only open in case of fire, so we will ignore it. Each duct
+                            has a damper which modulates to maintain sufficient exhaust for each grille. Each
+                            AHU also has a supply fan which should modulate according to the speed of the
+                            exhaust fan.
+                        </p>
+                        <h2 id="Dampers">Dampers<a class="anchor-link" href="#Dampers">¶</a></h2>
+                        <p>
+                            Each AHU has three exhaust dampers, each serving one grill or portion of one
+                            grill. Let's generate a plot tracking their position wrt time.
+                        </p>
+                        <p>
+                            Damper 2 of AHU-4 has a trend on it, but it seems to have stopped sending data
+                            recently. Its trends do not show up in this study.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="cell border-box-sizing code_cell rendered">
+                <div class="output_wrapper">
+                    <div class="output">
+                        <div class="output_area">
+                            <div class="output_png output_subarea">
+                                <img
+                                    alt="No description has been provided for this image"
+                                    src="./img/cmh_kitchen_smoke.html_img_1.png"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="cell border-box-sizing text_cell rendered">
+                <div class="inner_cell">
+                    <div class="text_cell_render border-box-sizing rendered_html">
+                        <p>
+                            In both AHUs, Damper 1 looks like it's almost on a timed loop to open and close
+                            with a period of exactly one day. Damper 3 is much more erratic in its behaviour.
+                            At 10:30 pm each day, all dampers briefly open to 100%, without fail. It looks
+                            like this is hard-coded or manually prompted behaviour; see how AHU-4 Damper 3
+                            always goes from its usual value of ~50% straight to 100%, followed by a perfectly
+                            steady closing throughout the next morning.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="cell border-box-sizing text_cell rendered">
+                <div class="inner_cell">
+                    <div class="text_cell_render border-box-sizing rendered_html">
+                        <h2 id="Exhaust-and-Supply-Fans">
+                            Exhaust and Supply Fans<a class="anchor-link" href="#Exhaust-and-Supply-Fans"
+                                >¶</a
+                            >
+                        </h2>
+                        <p>
+                            Each exhaust fan modulates according to "the amount of cooking" happening int the
+                            kitchen. The sequence of operations isn't super clear on the specifics. See the
+                            below plot showing the VFD % status for each fan wrt time.
+                        </p>
+                        <p>
+                            AHU-3 supply fan trend is a constant flat line at 0%. There is likely some
+                            connection issue, as the fan is running, as confirmed by a site visit.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="cell border-box-sizing code_cell rendered">
+                <div class="output_wrapper">
+                    <div class="output">
+                        <div class="output_area">
+                            <div class="output_png output_subarea">
+                                <img
+                                    alt="No description has been provided for this image"
+                                    src="./img/cmh_kitchen_smoke.html_img_2.png"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="cell border-box-sizing text_cell rendered">
+                <div class="inner_cell">
+                    <div class="text_cell_render border-box-sizing rendered_html">
+                        <h2 id="Typical-Day">Typical Day<a class="anchor-link" href="#Typical-Day">¶</a></h2>
+                        <p>
+                            To see trends with finer detail, we'll zoom into the two above plots for a random
+                            typical day: Friday November 10th. Then we'll get a better idea of at what time
+                            events typically occur. Each vertical grid line lines up exactly on the hour.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="cell border-box-sizing code_cell rendered">
+                <div class="output_wrapper">
+                    <div class="output">
+                        <div class="output_area">
+                            <div class="output_png output_subarea">
+                                <img
+                                    alt="No description has been provided for this image"
+                                    src="./img/cmh_kitchen_smoke.html_img_3.png"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="cell border-box-sizing code_cell rendered">
+                <div class="output_wrapper">
+                    <div class="output">
+                        <div class="output_area">
+                            <div class="output_png output_subarea">
+                                <img
+                                    alt="No description has been provided for this image"
+                                    src="./img/cmh_kitchen_smoke.html_img_4.png"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="cell border-box-sizing text_cell rendered">
+                <div class="inner_cell">
+                    <div class="text_cell_render border-box-sizing rendered_html">
+                        <h2 id="Conclusions">Conclusions<a class="anchor-link" href="#Conclusions">¶</a></h2>
+                        <p>
+                            The dampers seem to be modulating well. The supply and exhaust fans seem to also
+                            be working as intended, turning on to 100% speed each morning, until the late
+                            evening. The cause of our smoky kitchen is not likely to lie in the sequence of
+                            operations or anything that could be found via trends.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="cell border-box-sizing code_cell rendered"></div>
+        </div>
+    </body>
+</html>
